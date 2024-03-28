@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: docker.io/mongo:latest
+    container_name: mongo1
+    volumes:
+      - ./mongodb-data:/data/db
+#      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped  
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    networks:
+      mongodb_net:
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning      
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel,grafana-piechart-panel"
+      GF_SECURITY_ADMIN_PASSWORD: "your_password"
+    networks:
+      mongodb_net:
+    depends_on:
+      - prometheus
+      - mongo_exporter
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-data:/prometheus
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    depends_on:
+      - mongo_exporter
+    networks:
+      mongodb_net:
+
+  mongo_exporter:
+    image: percona/mongodb_exporter:0.37.0
+    ports:
+     - "9216:9216"
+    command: "--collect-all"
+    environment:
+      MONGODB_URI: "mongodb://root:example@mongodb:27017"          
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    networks:
+      mongodb_net: 
+
+networks:
+  mongodb_net:
+      driver: bridge

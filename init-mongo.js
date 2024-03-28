@@ -1,0 +1,2 @@
+db.getSiblingDB("DB1").createUser({user: "monitoring", pwd: "monitoring", roles: [{role: "dbOwner", db: "DB1"}]});
+db.getSiblingDB("DB1_stat").createUser({user: "monitoring", pwd: "monitoring", roles: [{role: "dbOwner", db: "DB1_stat"}]});
